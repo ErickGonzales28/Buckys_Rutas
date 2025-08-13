@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Mapa de Rutas - Puente Piedra</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Leaflet -->
+
+  <link rel="stylesheet" href="leaflet.css" />
+  <style>
+    body, html { margin:0; padding:0; height:100%; font-family: system-ui,-apple-system,BlinkMacSystemFont,sans-serif; }
+    #map { position:absolute; top:0; bottom:0; left:0; right:0; }
+    .control-column { position: absolute; top:10px; left:10px; display:flex; flex-direction: column; gap:6px; z-index:1000; }
+    .ctrl-btn { background:white; border-radius:6px; padding:6px 10px; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.2); font-size:12px; border:1px solid #ccc; }
+    .zoom-indicator { position: absolute; bottom:10px; left:10px; background:rgba(255,255,255,0.9); padding:4px 8px; border-radius:4px; font-size:12px; box-shadow:0 1px 4px rgba(0,0,0,0.2); }
+    #filterOverlay {
+      position: fixed;
+      top:0; left:0; right:0; bottom:0;
+      background: white;
+      z-index: 2000;
+      display:none;
+      overflow:auto;
+      padding: 20px;
+    }
+    .filter-section { margin-bottom:16px; }
+    .filter-label { font-weight:600; margin-bottom:4px; display:block; }
+    .chip { display:inline-block; padding:4px 10px; border-radius:12px; background:#eee; margin:2px; cursor:pointer; }
+    .chip.selected { background:#095FDD; color:white; }
+    .small { font-size:11px; color:#555; }
+    .custom-label { pointer-events:none; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="control-column">
+    <div class="ctrl-btn" id="btnFilters">Filtros</div>
+    <div class="ctrl-btn" id="btnToggleRoutes">Rutas: Todas</div>
+    <div class="ctrl-btn" id="btnLocate">Centrar ubicación</div>
+    <div class="ctrl-btn" id="btnZoomIn">+</div>
+    <div class="ctrl-btn" id="btnZoomOut">−</div>
+  </div>
+  <div id="zoomLevel" class="zoom-indicator">Zoom: --</div>
+
+  <div id="filterOverlay">
+    <h2>Filtros</h2>
+    <div class="filter-section">
+      <div class="filter-label">Departamento</div>
+      <div id="f-departamento"></div>
+    </div>
+    <div class="filter-section">
+      <div class="filter-label">Provincia</div>
+      <div id="f-provincia"></div>
+    </div>
+    <div class="filter-section">
+      <div class="filter-label">Distrito</div>
+      <div id="f-distrito"></div>
+    </div>
+    <div class="filter-section">
+      <div class="filter-label">Ruta</div>
+      <div id="f-ruta"></div>
+    </div>
+    <div style="margin-top:20px;">
+      <button id="applyFilters" class="ctrl-btn" style="margin-right:8px;">Aplicar</button>
+      <button id="clearFilters" class="ctrl-btn">Limpiar</button>
+    </div>
+    <div style="position:absolute; top:10px; right:10px;">
+      <div class="ctrl-btn" id="closeFilters">Cerrar ✕</div>
+    </div>
+  </div>
+
+<script src="leaflet.js"></script>
+    <script>
+    let puntosGeo = null;
+    let polyLayer = null;
+    let puntosLayer = null;
+    let labelLayer = null;
+    let currentFilters = { Departamentos: null, Provincias: null, Distritos: null, Ruta: null };
+    let activeRoutes = new Set();
+    const zoomShowPolygons = 13;
+    const zoomShowLabels = 15;
+
+    const map = L.map("map", { zoomControl: false }).setView([-11.8955, -77.0679], 14);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+
+    function updateZoomIndicator() {
+      document.getElementById("zoomLevel").textContent = "Zoom: " + map.getZoom().toFixed(1);
+    }
+    map.on("zoomend moveend", () => {
+      updateZoomIndicator();
+      refreshVisibility();
+    });
+    updateZoomIndicator();
+
+    document.getElementById("btnZoomIn").onclick = () => map.zoomIn();
+    document.getElementById("btnZoomOut").onclick = () => map.zoomOut();
+    document.getElementById("btnLocate").onclick = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          map.setView([pos.coords.latitude, pos.coords.longitude], 16);
+        });
+      } else alert("Geolocalización no disponible");
+    };
+    document.getElementById("btnFilters").onclick = () => {
+      document.getElementById("filterOverlay").style.display = "block";
+    };
+    document.getElementById("closeFilters").onclick = () => {
+      document.getElementById("filterOverlay").style.display = "none";
+    };
+    document.getElementById("clearFilters").onclick = () => {
+      currentFilters = { Departamentos: null, Provincias: null, Distritos: null, Ruta: null };
+      rebuildFilterChips();
+    };
+    document.getElementById("applyFilters").onclick = () => {
+      applyFilters();
+      document.getElementById("filterOverlay").style.display = "none";
+    };
+    document.getElementById("btnToggleRoutes").onclick = () => {
+      if (activeRoutes.size === 0) {
+        activeRoutes = new Set(["Ruta 1"]);
+        document.getElementById("btnToggleRoutes").textContent = "Rutas: Ruta 1";
+      } else {
+        activeRoutes.clear();
+        document.getElementById("btnToggleRoutes").textContent = "Rutas: Todas";
+      }
+      refreshLayers();
+    };
+
+    Promise.all([
+      fetch("puntos_publicos.geojson").then(r => r.json()),
+      fetch("poligonos_rutas.geojson").then(r => r.json())
+    ]).then(([puntos, polys]) => {
+      puntosGeo = puntos;
+      initFilterOptions(puntos.features);
+      drawPolygons(polys);
+      drawPoints(puntos);
+    }).catch(e => {
+      console.error("Error cargando datos:", e);
+      alert("No se pudo cargar los geojson. Verifica nombres y ubicación.");
+    });
+
+    function initFilterOptions(features) {
+      const depts = new Set();
+      const provs = new Set();
+      const dists = new Set();
+      const rutas = new Set();
+      features.forEach(f => {
+        const p = f.properties;
+        if (p.Departamentos) depts.add(p.Departamentos);
+        if (p.Provincias) provs.add(p.Provincias);
+        if (p.Distritos) dists.add(p.Distritos);
+        if (p.Ruta) rutas.add(p.Ruta);
+      });
+      populateChips("f-departamento", Array.from(depts).sort(), "Departamentos");
+      populateChips("f-provincia", Array.from(provs).sort(), "Provincias");
+      populateChips("f-distrito", Array.from(dists).sort(), "Distritos");
+      populateChips("f-ruta", Array.from(rutas).sort((a,b)=> a.localeCompare(b, undefined, {numeric:true})), "Ruta");
+    }
+
+    function populateChips(containerId, items, key) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+      items.forEach(i => {
+        const c = document.createElement("div");
+        c.className = "chip";
+        c.textContent = i;
+        c.dataset.key = key;
+        c.dataset.value = i;
+        c.onclick = () => {
+          currentFilters[key] = (currentFilters[key] === i ? null : i);
+          rebuildFilterChips();
+        };
+        container.appendChild(c);
+      });
+    }
+
+    function rebuildFilterChips() {
+      document.querySelectorAll(".chip").forEach(el => {
+        const k = el.dataset.key;
+        const v = el.dataset.value;
+        if (currentFilters[k] === v) el.classList.add("selected");
+        else el.classList.remove("selected");
+      });
+    }
+
+    function applyFilters() {
+      refreshLayers();
+    }
+
+    function passesFilter(props) {
+      if (currentFilters.Departamentos && props.Departamentos !== currentFilters.Departamentos) return false;
+      if (currentFilters.Provincias && props.Provincias !== currentFilters.Provincias) return false;
+      if (currentFilters.Distritos && props.Distritos !== currentFilters.Distritos) return false;
+      if (currentFilters.Ruta && props.Ruta !== currentFilters.Ruta) return false;
+      return true;
+    }
+
+function drawPolygons(geojson) {
+  if (polyLayer) map.removeLayer(polyLayer);
+  polyLayer = L.geoJSON(geojson, {
+    style: feature => ({
+      color: "#D21311",
+      weight: 2,
+      fillColor: "#D21311",
+      fillOpacity: 0.05, // 95% transparente
+      opacity: 1,
+    }),
+    filter: feature => {
+      if (map.getZoom() < zoomShowPolygons) return false;
+      // si hay filtro de ruta, solo mostrar polígonos de esa ruta
+      if (currentFilters.Ruta && feature.properties.Ruta !== currentFilters.Ruta) return false;
+      return true;
+    }
+  }).addTo(map);
+}
+
+    function drawPoints(geojson) {
+      if (puntosLayer) map.removeLayer(puntosLayer);
+      if (labelLayer) map.removeLayer(labelLayer);
+      puntosLayer = L.layerGroup();
+      labelLayer = L.layerGroup();
+
+      geojson.features.forEach(f => {
+        if (!passesFilter(f.properties)) return;
+        const lat = f.geometry.coordinates[1];
+        const lon = f.geometry.coordinates[0];
+        const ruta = f.properties.Ruta;
+        if (activeRoutes.size && !activeRoutes.has(ruta)) return;
+
+        const circle = L.circleMarker([lat, lon], {
+          radius: 5,
+          fillColor: "#D21311",
+          color: "#D21311",
+          weight: 1,
+          fillOpacity: 1,
+          interactive: false,
+        });
+        puntosLayer.addLayer(circle);
+
+        if (map.getZoom() >= zoomShowLabels) {
+          const label = L.divIcon({
+            className: "custom-label",
+            html: `
+              <div style="position: relative; transform: translate(-50%, -100%); white-space: nowrap;">
+                <svg xmlns="http://www.w3.org/2000/svg" style="overflow:visible;">
+                  <line x1="0" y1="12" x2="0" y2="2" stroke="#095FDD" stroke-width="1"/>
+                  <text x="4" y="12" font-size="8" fill="#095FDD">${f.properties.ID}</text>
+                </svg>
+              </div>`,
+            iconSize: [100, 20],
+            iconAnchor: [0, 0],
+            interactive: false
+          });
+          labelLayer.addLayer(L.marker([lat, lon], { icon: label }));
+        }
+      });
+      puntosLayer.addTo(map);
+      labelLayer.addTo(map);
+    }
+
+    function refreshVisibility() {
+      drawPolygonsLayer();
+      if (puntosGeo) drawPoints(puntosGeo);
+      updateZoomIndicator();
+    }
+
+    function drawPolygonsLayer() {
+      if (polyLayer) map.removeLayer(polyLayer);
+      fetch("poligonos_rutas.geojson").then(r => r.json()).then(data => {
+        polyLayer = L.geoJSON(data, {
+          style: feature => ({
+            color: "#D21311",
+            weight: 3,
+            fillColor: "#D21311",
+            fillOpacity: 0.08,
+            opacity: 1,
+          }),
+          filter: feature => map.getZoom() >= zoomShowPolygons
+        }).addTo(map);
+      });
+    }
+
+    function refreshLayers() {
+      drawPolygonsLayer();
+      if (puntosGeo) drawPoints(puntosGeo);
+    }
+
+    map.whenReady(() => {
+      updateZoomIndicator();
+    });
+  </script>
+</body>
+</html>
