@@ -1,0 +1,55 @@
+{
+  "input_csv": "BD_PDV.csv",
+  "client_prefix": "DIMORISAC S.A.C._PuentePiedra",
+  "filtros": {
+    "Departamentos": [
+      "LimaProvince"
+    ],
+    "Provincias": [
+      "Lima"
+    ],
+    "Distritos": [
+      "PuentePiedra"
+    ],
+    "Ruta": []
+  },
+  "cluster": {
+    "vias_file": "vias_Lima.geojson",
+    "reference_point": [ 
+      -11.874393,
+      -77.069977
+    ],
+    "target_size": 60,
+    "min_size": 50,
+    "max_size": 80,
+    "max_routes": 12,
+    "buffer_m": 50,
+    "eps_metros": 500,
+    "fusion_dist_max": 1000,
+    "distance_method": "planar"
+  },
+  "polygon": {
+    "polygon_buffer_m": 50,
+    "polygon_method": "convex",
+    "simplify_tolerance": 20,
+    "roads_buffer_m": 50,
+    "allow_multipolygon": false
+  },
+  "naming": {
+    "clean": "{prefix}_Datalimpia_{datetime}.csv",
+    "cluster": "{prefix}_Rutas_{datetime}.csv",
+    "polygons": "{prefix}_Poligonos_{datetime}.geojson",
+    "public_points": "{prefix}_PuntosPublicos_{datetime}.geojson",
+    "public_polygons": "{prefix}_PoligonosPublicos_{datetime}.geojson"
+  },
+  "web": {
+    "map_center": [
+      -11.873746,
+      -77.028021
+    ],
+    "zoom_initial": 14,
+    "zoom_show_polygons": 13,
+    "zoom_show_labels": 15
+  },
+  "now": "20250810"
+}
