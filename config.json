@@ -1,6 +1,6 @@
 {
   "input_csv": "BD_PDV.csv",
-  "client_prefix": "DIMORISAC S.A.C._PuentePiedra",
+  "client_prefix": "DIMORISAC S.A.C._Carabayllo",
   "filtros": {
     "Departamentos": [
       "LimaProvince"
@@ -9,15 +9,15 @@
       "Lima"
     ],
     "Distritos": [
-      "PuentePiedra"
+      "Carabayllo"
     ],
     "Ruta": []
   },
   "cluster": {
     "vias_file": "vias_Lima.geojson",
-    "reference_point": [ 
-      -11.874393,
-      -77.069977
+    "reference_point": [
+      11.872182,
+      -77.034014
     ],
     "target_size": 60,
     "min_size": 50,
@@ -44,12 +44,12 @@
   },
   "web": {
     "map_center": [
-      -11.873746,
-      -77.028021
+      -11.872182,
+      -77.034014
     ],
     "zoom_initial": 14,
     "zoom_show_polygons": 13,
     "zoom_show_labels": 15
   },
-  "now": "20250810"
+  "now": "20250817"
 }
