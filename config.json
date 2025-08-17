@@ -1,6 +1,6 @@
 {
   "input_csv": "BD_PDV.csv",
-  "client_prefix": "DIMORISAC S.A.C._Carabayllo",
+  "client_prefix": "pruebas",
   "filtros": {
     "Departamentos": [
       "LimaProvince"
@@ -9,15 +9,15 @@
       "Lima"
     ],
     "Distritos": [
-      "Carabayllo"
+      "VillaMariadelTriunfo","VillaElSalvador"
     ],
     "Ruta": []
   },
   "cluster": {
-    "vias_file": "vias_Lima.geojson",
+    "vias_file": "vias_Peru.geojson",
     "reference_point": [
-      11.872182,
-      -77.034014
+      -12.212422152882215,
+      -76.9075602378917
     ],
     "target_size": 60,
     "min_size": 50,
@@ -36,16 +36,16 @@
     "allow_multipolygon": false
   },
   "naming": {
-    "clean": "{prefix}_Datalimpia_{datetime}.csv",
-    "cluster": "{prefix}_Rutas_{datetime}.csv",
-    "polygons": "{prefix}_Poligonos_{datetime}.geojson",
-    "public_points": "{prefix}_PuntosPublicos_{datetime}.geojson",
-    "public_polygons": "{prefix}_PoligonosPublicos_{datetime}.geojson"
+    "clean": "./insumos/{prefix}_Datalimpia_{datetime}.csv",
+    "cluster": "./insumos/{prefix}_Rutas_{datetime}.csv",
+    "polygons": "./insumos/{prefix}_Poligonos_{datetime}.geojson",
+    "public_points": "./data/{prefix}_PuntosPublicos_{datetime}.geojson",
+    "public_polygons": "./data/{prefix}_PoligonosPublicos_{datetime}.geojson"
   },
   "web": {
     "map_center": [
-      -11.872182,
-      -77.034014
+      -12.02996,
+      -76.913363
     ],
     "zoom_initial": 14,
     "zoom_show_polygons": 13,
