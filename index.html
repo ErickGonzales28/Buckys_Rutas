@@ -144,8 +144,8 @@
         const response = await fetch('./config.json');
         const config = await response.json();
         
-        POINTS_URL = encodeURI(`./data/${config.client_prefix}_PuntosPublicos_20250819.geojson`);
-        POLYS_URL = encodeURI(`./data/${config.client_prefix}_PoligonosPublicos_20250819.geojson`);
+        POINTS_URL = encodeURI(`./data/${config.client_prefix}_PuntosPublicos_${config.now}.geojson`);
+        POLYS_URL = encodeURI(`./data/${config.client_prefix}_PoligonosPublicos_${config.now}.geojson`);
         
         // Llamamos a la función que depende de estas variables
         initializeMap();
