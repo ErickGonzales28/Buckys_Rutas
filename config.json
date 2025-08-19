@@ -1,15 +1,16 @@
 {
   "input_csv": "BD_PDV.csv",
-  "client_prefix": "pruebas",
+  "client_prefix": "DISTRIBUCION_TACNA",
   "filtros": {
     "Departamentos": [
-      "LimaProvince"
+      "Tacna",
+      ""
     ],
     "Provincias": [
-      "Lima"
+      ""
     ],
     "Distritos": [
-      "VillaMariadelTriunfo","VillaElSalvador"
+      ""
     ],
     "Ruta": []
   },
