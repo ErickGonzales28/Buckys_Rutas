@@ -1,7 +1,6 @@
 {
   "input_csv": "BD_PDV.csv",
   "client_prefix": "DISTRIBUCION_TACNA",
-  "now": "20250819",
   "filtros": {
     "Departamentos": [
       "Tacna",
@@ -53,4 +52,6 @@
     "zoom_show_polygons": 13,
     "zoom_show_labels": 15
   },
+
+  "now": "20250819"
 }
