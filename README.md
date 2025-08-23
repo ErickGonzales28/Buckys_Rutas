@@ -3,7 +3,11 @@ El siguiente proyecto contiene un visualizador de archivos geojson para el clien
 Los archivos .geojson seran almacenados dentro de la carpeta "data", se leera estos archivos y se 
 mostrara las rutas seleccionadas en un mapa, dentro del cual se podrá visualizar y navegar en tiempo real.
 
+
 ## OBJETIVO:
 - Facilitar un mapa en tiempo real a los distribuidores asignados a ciertas regiones(distritos).
 - Optimizar el tiempo de distribución de los distribuidores.
 - Abarcar la mayor cantidad de puntos de venta posibles.
+
+## CONSIDERACIONES:
+- Tener el archivo config.json actualizado para que el visualizador detecte que archivos tomar para generar el mapa interactivo.
